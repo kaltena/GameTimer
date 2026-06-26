@@ -1,0 +1,1670 @@
+<!DOCTYPE html>
+<html lang="en" data-app="board-game-score-tracker">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Offline board game score tracker for fast table play.">
+  <title>Board Game Score Tracker</title>
+  <link rel="manifest" id="manifestLink">
+  <script>
+    (() => {
+      const param = new URLSearchParams(window.location.search).get("scoutTheme");
+      const theme =
+        param || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      document.documentElement.setAttribute("data-theme", theme);
+    })();
+  </script>
+  <script>
+    (() => {
+      const manifest = {
+        name: "Board Game Score Tracker",
+        short_name: "Score Tracker",
+        start_url: ".",
+        display: "standalone",
+        description: "Offline board game score tracker for fast table play."
+      };
+      document.getElementById("manifestLink").href =
+        `data:application/manifest+json,${encodeURIComponent(JSON.stringify(manifest))}`;
+    })();
+  </script>
+  <style>
+    /* =========================
+       Clawpilot theme variables
+       ========================= */
+    :root {
+      color-scheme: light;
+      --cp-bg: #f7f4ef;
+      --cp-bg-elevated: #fcfbf8;
+      --cp-surface: #ffffff;
+      --cp-surface-soft: #f5f5f5;
+      --cp-border: #dedede;
+      --cp-border-strong: #919191;
+      --cp-text: #242424;
+      --cp-text-muted: #5c5c5c;
+      --cp-text-soft: #6f6f6f;
+      --cp-accent: #b11f4b;
+      --cp-accent-hover: #9a1a41;
+      --cp-accent-soft: rgba(177, 31, 75, 0.08);
+      --cp-accent-fg: #ffffff;
+      --cp-success: #16a34a;
+      --cp-danger: #dc2626;
+      --cp-warning: #f59e0b;
+      --cp-link: #0078d4;
+      --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.12);
+      --cp-overlay: rgba(255, 255, 255, 0.8);
+      --cp-panel: rgba(255, 255, 255, 0.86);
+      --cp-panel-strong: rgba(255, 255, 255, 0.96);
+      --cp-sheen: rgba(255, 255, 255, 0.55);
+      --cp-highlight: rgba(177, 31, 75, 0.12);
+    }
+    html[data-theme="dark"] {
+      color-scheme: dark;
+      --cp-bg: #3d3b3a;
+      --cp-bg-elevated: #343231;
+      --cp-surface: #292929;
+      --cp-surface-soft: #2e2e2e;
+      --cp-border: #474747;
+      --cp-border-strong: #5f5f5f;
+      --cp-text: #dedede;
+      --cp-text-muted: #919191;
+      --cp-text-soft: #b0b0b0;
+      --cp-accent: #fd8ea1;
+      --cp-accent-hover: #fb7b91;
+      --cp-accent-soft: rgba(253, 142, 161, 0.14);
+      --cp-accent-fg: #1a1a1a;
+      --cp-success: #4ade80;
+      --cp-danger: #f87171;
+      --cp-warning: #fbbf24;
+      --cp-link: #4da6ff;
+      --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.32);
+      --cp-overlay: rgba(41, 41, 41, 0.88);
+      --cp-panel: rgba(41, 41, 41, 0.72);
+      --cp-panel-strong: rgba(41, 41, 41, 0.96);
+      --cp-sheen: rgba(255, 255, 255, 0.04);
+      --cp-highlight: rgba(253, 142, 161, 0.12);
+    }
+
+    /* =========================
+       Application styles
+       ========================= */
+    * { box-sizing: border-box; }
+    html, body { min-height: 100%; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at top left, var(--cp-highlight), transparent 30rem),
+        var(--cp-bg);
+      color: var(--cp-text);
+      font-family: "Segoe UI", Aptos, Calibri, -apple-system, BlinkMacSystemFont, sans-serif;
+      overflow-x: hidden;
+      -webkit-tap-highlight-color: transparent;
+    }
+    button, input, select, textarea {
+      font: inherit;
+      color: inherit;
+    }
+    button {
+      border: 1px solid var(--cp-border);
+      background: var(--cp-surface-soft);
+      color: var(--cp-text);
+      min-height: 48px;
+      border-radius: 0.625rem;
+      cursor: pointer;
+      transition: transform 140ms ease, background 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
+      touch-action: manipulation;
+    }
+    button:hover { border-color: var(--cp-border-strong); }
+    button:active { transform: scale(0.97); }
+    button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+      outline: 3px solid var(--cp-link);
+      outline-offset: 2px;
+    }
+    .app {
+      width: min(1440px, 100%);
+      margin: 0 auto;
+      min-height: 100svh;
+      padding: 12px;
+      display: grid;
+      gap: 12px;
+    }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: stretch;
+      padding: 8px 0;
+      background: linear-gradient(to bottom, var(--cp-bg), transparent);
+    }
+    .winner-card, .toolbar, .panel, .player-card, dialog {
+      background: var(--cp-surface);
+      border: 1px solid var(--cp-border);
+      border-radius: 16px;
+      box-shadow: 0 0 2px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.14);
+    }
+    .winner-card {
+      min-height: 76px;
+      padding: 12px 16px;
+      display: grid;
+      gap: 6px;
+      overflow: hidden;
+    }
+    .winner-label {
+      color: var(--cp-text-muted);
+      font-size: 0.88rem;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+    .winner-name {
+      font-size: clamp(1.45rem, 5vw, 2.8rem);
+      line-height: 1;
+      font-weight: 900;
+      text-wrap: balance;
+    }
+    .winner-name.crown { animation: crown 1.8s ease-in-out infinite; }
+    .mode-row, .mini-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    .mode-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 36px;
+      padding: 4px 10px;
+      border: 1px solid var(--cp-border);
+      border-radius: 999px;
+      color: var(--cp-text-soft);
+      background: var(--cp-surface-soft);
+      cursor: pointer;
+    }
+    .mode-pill input { accent-color: var(--cp-accent); }
+    .toolbar {
+      padding: 8px;
+      display: grid;
+      grid-auto-flow: column;
+      gap: 8px;
+      align-content: center;
+      align-items: center;
+    }
+    .icon-button, .primary-button, .danger-button, .ghost-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-weight: 800;
+      white-space: nowrap;
+      padding: 0 14px;
+    }
+    .fab {
+      width: 62px;
+      height: 62px;
+      border-radius: 50%;
+      background: var(--cp-accent);
+      color: var(--cp-accent-fg);
+      border-color: var(--cp-accent);
+      font-size: 2rem;
+      box-shadow: var(--cp-shadow);
+    }
+    .primary-button {
+      background: var(--cp-accent);
+      color: var(--cp-accent-fg);
+      border-color: var(--cp-accent);
+    }
+    .danger-button {
+      background: var(--cp-danger);
+      color: var(--cp-accent-fg);
+      border-color: var(--cp-danger);
+    }
+    .ghost-button { background: transparent; }
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 360px;
+      gap: 12px;
+      align-items: start;
+    }
+    .players-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+      gap: 12px;
+      align-items: stretch;
+    }
+    .players-grid.large-score { grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)); }
+    .player-card {
+      --player-color: var(--cp-accent);
+      position: relative;
+      display: grid;
+      gap: 10px;
+      padding: 12px;
+      border-left: 8px solid var(--player-color);
+      min-height: 360px;
+      overflow: hidden;
+      touch-action: pan-y;
+    }
+    .player-card.leader {
+      border-color: var(--player-color);
+      box-shadow: 0 0 0 2px var(--cp-highlight), 0 0 2px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.14);
+    }
+    .player-card.current-turn { background: linear-gradient(135deg, var(--cp-highlight), var(--cp-surface) 48%); }
+    .player-card.locked { opacity: 0.72; }
+    .drag-handle {
+      position: absolute;
+      inset: 8px 8px auto auto;
+      width: 36px;
+      height: 36px;
+      min-height: 36px;
+      color: var(--cp-text-muted);
+    }
+    .player-head {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 8px;
+      align-items: center;
+      padding-right: 36px;
+    }
+    .avatar {
+      width: 48px;
+      height: 48px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--cp-surface-soft);
+      border: 1px solid var(--cp-border);
+      font-size: 1.5rem;
+    }
+    .name-wrap { min-width: 0; }
+    .player-name {
+      margin: 0;
+      color: var(--player-color);
+      font-size: 1.35rem;
+      font-weight: 900;
+      line-height: 1.05;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      cursor: text;
+    }
+    .rank-line {
+      color: var(--cp-text-muted);
+      font-size: 0.85rem;
+      margin-top: 3px;
+    }
+    .color-input {
+      width: 48px;
+      height: 48px;
+      padding: 3px;
+      border: 1px solid var(--cp-border);
+      border-radius: 0.625rem;
+      background: var(--cp-surface-soft);
+    }
+    .score-zone {
+      position: relative;
+      display: grid;
+      place-items: center;
+      min-height: 96px;
+      border-radius: 16px;
+      background: var(--cp-surface-soft);
+      border: 1px solid var(--cp-border);
+      overflow: hidden;
+    }
+    .score {
+      color: var(--player-color);
+      font-size: clamp(48px, 17vw, 86px);
+      line-height: 1;
+      font-weight: 1000;
+      letter-spacing: -0.08em;
+    }
+    .score.pulse { animation: pulse 240ms ease; }
+    .score-delta {
+      position: absolute;
+      inset: 12px 16px auto auto;
+      color: var(--cp-success);
+      font-size: 1.3rem;
+      font-weight: 900;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .score-delta.negative { color: var(--cp-danger); }
+    .score-delta.show { animation: floatUp 650ms ease forwards; }
+    .quick-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .score-button {
+      color: var(--player-color);
+      font-weight: 900;
+      font-size: 1.05rem;
+      background: var(--cp-surface-soft);
+    }
+    .big-controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .big-score {
+      min-height: 72px;
+      font-size: 2rem;
+      font-weight: 1000;
+      color: var(--player-color);
+    }
+    .player-actions {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+    .player-actions button { min-height: 44px; }
+    .panel-stack { display: grid; gap: 12px; }
+    .panel { padding: 12px; }
+    .panel h2, .panel h3 {
+      margin: 0 0 10px;
+      font-size: 1.05rem;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .stat {
+      background: var(--cp-surface-soft);
+      border: 1px solid var(--cp-border);
+      border-radius: 0.625rem;
+      padding: 10px;
+      min-height: 64px;
+    }
+    .stat-label {
+      color: var(--cp-text-muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .stat-value {
+      display: block;
+      margin-top: 4px;
+      font-weight: 900;
+      font-size: 1.2rem;
+      overflow-wrap: anywhere;
+    }
+    .footer-controls {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 8px;
+    }
+    .history-list {
+      display: grid;
+      gap: 6px;
+      max-height: 280px;
+      overflow: auto;
+      padding-right: 2px;
+    }
+    .history-item {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: center;
+      padding: 8px;
+      border: 1px solid var(--cp-border);
+      border-radius: 0.625rem;
+      background: var(--cp-surface-soft);
+    }
+    .history-item button { min-height: 36px; }
+    .muted { color: var(--cp-text-muted); }
+    .control-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .turn-display {
+      font-size: 1.3rem;
+      font-weight: 900;
+      color: var(--cp-accent);
+      margin-bottom: 8px;
+    }
+    .timer-display, .roller-display {
+      font-size: 2rem;
+      font-weight: 1000;
+      text-align: center;
+      padding: 10px;
+      border-radius: 0.625rem;
+      background: var(--cp-surface-soft);
+      border: 1px solid var(--cp-border);
+      min-height: 64px;
+    }
+    .roller-display.spin { animation: pulse 320ms ease-in-out 3; }
+    .notes {
+      width: 100%;
+      min-height: 120px;
+      resize: vertical;
+      padding: 12px;
+      border-radius: 0.625rem;
+      border: 1px solid var(--cp-border);
+      background: var(--cp-surface-soft);
+    }
+    .settings-grid {
+      display: grid;
+      gap: 8px;
+    }
+    .switch-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      min-height: 44px;
+      border-bottom: 1px solid var(--cp-border);
+    }
+    .switch-row:last-child { border-bottom: 0; }
+    .switch-row input, .switch-row select {
+      accent-color: var(--cp-accent);
+      max-width: 55%;
+    }
+    .field {
+      display: grid;
+      gap: 6px;
+      margin: 8px 0;
+    }
+    .field label {
+      color: var(--cp-text-muted);
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+    .field input, .field textarea, .field select {
+      min-height: 48px;
+      border: 1px solid var(--cp-border);
+      border-radius: 0.625rem;
+      background: var(--cp-surface-soft);
+      padding: 10px;
+    }
+    .graph {
+      width: 100%;
+      min-height: 150px;
+      border: 1px solid var(--cp-border);
+      border-radius: 0.625rem;
+      background: var(--cp-surface-soft);
+    }
+    .archive-list {
+      display: grid;
+      gap: 8px;
+      max-height: 260px;
+      overflow: auto;
+    }
+    .archive-card {
+      padding: 10px;
+      border: 1px solid var(--cp-border);
+      border-radius: 0.625rem;
+      background: var(--cp-surface-soft);
+    }
+    dialog {
+      width: min(520px, calc(100vw - 24px));
+      border: 1px solid var(--cp-border);
+      padding: 0;
+      color: var(--cp-text);
+    }
+    dialog::backdrop { background: var(--cp-overlay); }
+    .dialog-body {
+      padding: 16px;
+      display: grid;
+      gap: 12px;
+    }
+    .dialog-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .keypad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .keypad button { font-size: 1.3rem; font-weight: 900; }
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: max(18px, env(safe-area-inset-bottom));
+      transform: translateX(-50%) translateY(120%);
+      max-width: min(520px, calc(100vw - 24px));
+      padding: 12px 16px;
+      background: var(--cp-panel-strong);
+      color: var(--cp-text);
+      border: 1px solid var(--cp-border);
+      border-radius: 999px;
+      box-shadow: var(--cp-shadow);
+      z-index: 100;
+      transition: transform 220ms ease;
+      text-align: center;
+      font-weight: 800;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    .confetti {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 90;
+    }
+    .confetti i {
+      position: absolute;
+      top: -20px;
+      width: 10px;
+      height: 18px;
+      background: var(--cp-accent);
+      animation: confetti 1500ms linear forwards;
+    }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+    .compact .player-card { min-height: auto; }
+    .compact .score-zone { min-height: 72px; }
+    .compact .score { font-size: clamp(48px, 12vw, 68px); }
+    .compact .quick-grid { grid-template-columns: repeat(6, 1fr); }
+    .compact .big-controls { grid-template-columns: repeat(4, 1fr); }
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.08); }
+      100% { transform: scale(1); }
+    }
+    @keyframes floatUp {
+      0% { opacity: 0; transform: translateY(18px); }
+      20% { opacity: 1; }
+      100% { opacity: 0; transform: translateY(-28px); }
+    }
+    @keyframes crown {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-3px); }
+    }
+    @keyframes confetti {
+      to { transform: translateY(110vh) rotate(580deg); opacity: 0; }
+    }
+    @media (max-width: 980px) {
+      .layout { grid-template-columns: 1fr; }
+      .panel-stack { grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); }
+      .topbar { grid-template-columns: 1fr; }
+      .toolbar { grid-auto-flow: row; grid-template-columns: 1fr auto auto auto; }
+    }
+    @media (max-width: 560px) {
+      .app { padding: 8px; gap: 8px; }
+      .players-grid { gap: 8px; }
+      .toolbar { grid-template-columns: 1fr 1fr; }
+      .fab { position: fixed; right: 16px; bottom: 16px; z-index: 50; }
+      .player-card { min-height: 330px; }
+      .quick-grid { grid-template-columns: repeat(3, 1fr); }
+      .stats-grid { grid-template-columns: 1fr; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 1ms !important;
+        transition-duration: 1ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app" id="app">
+    <header class="topbar" aria-label="Game header">
+      <section class="winner-card" aria-live="polite">
+        <div class="winner-label" id="winnerLabel">Winner</div>
+        <div class="winner-name crown" id="winnerName">Loading...</div>
+        <div class="mode-row" role="radiogroup" aria-label="Winner determined by">
+          <span class="muted">Winner determined by:</span>
+          <label class="mode-pill"><input type="radio" name="winnerMode" value="highest"> Highest Score</label>
+          <label class="mode-pill"><input type="radio" name="winnerMode" value="lowest"> Lowest Score</label>
+        </div>
+      </section>
+      <nav class="toolbar" aria-label="Quick actions">
+        <button class="ghost-button" id="themeToggle" type="button">Theme</button>
+        <button class="ghost-button" id="fullscreenBtn" type="button">Fullscreen</button>
+        <button class="ghost-button" id="shareBtn" type="button">Share</button>
+        <button class="fab" id="addPlayerBtn" type="button" aria-label="Add player">+</button>
+      </nav>
+    </header>
+
+    <section class="layout">
+      <div>
+        <section class="players-grid" id="playersGrid" aria-label="Players"></section>
+        <section class="panel" aria-label="Game controls" style="margin-top:12px">
+          <div class="footer-controls">
+            <button id="undoBtn" type="button">Undo</button>
+            <button id="redoBtn" type="button">Redo</button>
+            <button id="resetScoresBtn" type="button">Reset Scores</button>
+            <button id="newGameBtn" type="button">New Game</button>
+            <button id="deleteAllBtn" class="danger-button" type="button">Delete Players</button>
+            <button id="endGameBtn" class="primary-button" type="button">End Game</button>
+          </div>
+        </section>
+      </div>
+
+      <aside class="panel-stack" aria-label="Game tools and details">
+        <section class="panel" aria-labelledby="turnTitle">
+          <h2 id="turnTitle">Turn Tracker</h2>
+          <div class="turn-display" id="turnDisplay">▶ Player 1's Turn</div>
+          <div class="control-row">
+            <button id="prevTurnBtn" type="button">Previous</button>
+            <button id="nextTurnBtn" type="button">Next</button>
+          </div>
+          <label class="switch-row"><span>Advance after score</span><input id="autoTurnToggle" type="checkbox"></label>
+        </section>
+
+        <section class="panel" aria-labelledby="statsTitle">
+          <h2 id="statsTitle">Statistics</h2>
+          <div class="stats-grid" id="statsGrid"></div>
+        </section>
+
+        <section class="panel" aria-labelledby="timerTitle">
+          <h2 id="timerTitle">Timer</h2>
+          <div class="timer-display" id="timerDisplay">00:00:00</div>
+          <div class="control-row">
+            <button id="timerStartBtn" type="button">Start</button>
+            <button id="timerPauseBtn" type="button">Pause</button>
+            <button id="timerResetBtn" type="button">Reset</button>
+          </div>
+        </section>
+
+        <section class="panel" aria-labelledby="randomTitle">
+          <h2 id="randomTitle">Dice, Coin, Random Player</h2>
+          <div class="roller-display" id="rollerDisplay">Ready</div>
+          <div class="control-row">
+            <button data-die="4" type="button">d4</button>
+            <button data-die="6" type="button">d6</button>
+            <button data-die="8" type="button">d8</button>
+            <button data-die="10" type="button">d10</button>
+            <button data-die="12" type="button">d12</button>
+            <button data-die="20" type="button">d20</button>
+            <button id="coinBtn" type="button">Coin</button>
+            <button id="randomPlayerBtn" type="button">Player</button>
+          </div>
+        </section>
+
+        <section class="panel" aria-labelledby="graphTitle">
+          <h2 id="graphTitle">Score Progression</h2>
+          <svg class="graph" id="scoreGraph" role="img" aria-label="Score progression graph"></svg>
+        </section>
+
+        <section class="panel" aria-labelledby="historyTitle">
+          <div class="mini-row" style="justify-content:space-between">
+            <h2 id="historyTitle" style="margin:0">Score History</h2>
+            <button id="historyToggle" type="button">Collapse</button>
+          </div>
+          <div class="history-list" id="historyList"></div>
+        </section>
+
+        <section class="panel" aria-labelledby="settingsTitle">
+          <h2 id="settingsTitle">Fast Settings</h2>
+          <div class="settings-grid">
+            <label class="switch-row"><span>Muted</span><input id="muteToggle" type="checkbox"></label>
+            <label class="switch-row"><span>Haptics</span><input id="hapticToggle" type="checkbox"></label>
+            <label class="switch-row"><span>Keep screen awake</span><input id="wakeToggle" type="checkbox"></label>
+            <label class="switch-row"><span>Compact six-player mode</span><input id="compactToggle" type="checkbox"></label>
+            <label class="switch-row"><span>Large-score mode</span><input id="largeScoreToggle" type="checkbox"></label>
+            <label class="switch-row"><span>Color-blind palette</span><input id="paletteToggle" type="checkbox"></label>
+            <label class="switch-row"><span>Target score</span><input id="targetScoreInput" type="number" inputmode="numeric" placeholder="Off"></label>
+            <label class="switch-row"><span>Custom buttons</span><input id="customButtonsInput" type="text" placeholder="+2,+3,+25"></label>
+          </div>
+        </section>
+
+        <section class="panel" aria-labelledby="notesTitle">
+          <h2 id="notesTitle">Game Notes</h2>
+          <textarea class="notes" id="notesInput" maxlength="5000" placeholder="Round notes, reminders, house rules..."></textarea>
+        </section>
+
+        <section class="panel" aria-labelledby="presetTitle">
+          <h2 id="presetTitle">Presets</h2>
+          <div class="field">
+            <label for="presetName">Preset name</label>
+            <input id="presetName" maxlength="40" placeholder="Family Game">
+          </div>
+          <div class="control-row">
+            <button id="savePresetBtn" type="button">Save</button>
+            <button id="loadPresetBtn" type="button">Load</button>
+          </div>
+          <div class="control-row" id="templateButtons"></div>
+        </section>
+
+        <section class="panel" aria-labelledby="archiveTitle">
+          <h2 id="archiveTitle">Game Archive</h2>
+          <div class="field">
+            <label for="archiveSearch">Search completed games</label>
+            <input id="archiveSearch" placeholder="Search players, notes, date">
+          </div>
+          <div class="control-row">
+            <button id="exportJsonBtn" type="button">Export JSON</button>
+            <button id="importJsonBtn" type="button">Import JSON</button>
+            <button id="copyJsonBtn" type="button">Copy JSON</button>
+            <button id="csvBtn" type="button">CSV Archive</button>
+          </div>
+          <div class="archive-list" id="archiveList"></div>
+        </section>
+      </aside>
+    </section>
+  </main>
+
+  <dialog id="customDialog" aria-labelledby="customDialogTitle">
+    <form method="dialog" class="dialog-body">
+      <h2 id="customDialogTitle">Custom Score</h2>
+      <div class="field">
+        <label for="customValue">Value</label>
+        <input id="customValue" inputmode="numeric" pattern="-?[0-9]*" placeholder="Example: -12">
+      </div>
+      <div class="keypad" id="keypad">
+        <button value="1" type="button">1</button><button value="2" type="button">2</button><button value="3" type="button">3</button>
+        <button value="4" type="button">4</button><button value="5" type="button">5</button><button value="6" type="button">6</button>
+        <button value="7" type="button">7</button><button value="8" type="button">8</button><button value="9" type="button">9</button>
+        <button value="-" type="button">±</button><button value="0" type="button">0</button><button value="back" type="button">⌫</button>
+      </div>
+      <div class="dialog-actions">
+        <button value="cancel" type="submit">Cancel</button>
+        <button id="applyCustomBtn" class="primary-button" value="default" type="button">Apply</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="editDialog" aria-labelledby="editDialogTitle">
+    <form method="dialog" class="dialog-body">
+      <h2 id="editDialogTitle">Edit Player</h2>
+      <div class="field"><label for="editName">Name</label><input id="editName" maxlength="20"></div>
+      <div class="field"><label for="editAvatar">Emoji avatar</label><input id="editAvatar" maxlength="4"></div>
+      <label class="switch-row"><span>Lock player from editing</span><input id="editLocked" type="checkbox"></label>
+      <div class="dialog-actions">
+        <button value="cancel" type="submit">Cancel</button>
+        <button id="saveEditBtn" class="primary-button" value="default" type="button">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="confirmDialog" aria-labelledby="confirmTitle">
+    <form method="dialog" class="dialog-body">
+      <h2 id="confirmTitle">Confirm action</h2>
+      <p id="confirmMessage" class="muted"></p>
+      <div class="dialog-actions">
+        <button value="cancel" type="submit">Cancel</button>
+        <button id="confirmOkBtn" class="danger-button" value="default" type="button">Confirm</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="importDialog" aria-labelledby="importTitle">
+    <form method="dialog" class="dialog-body">
+      <h2 id="importTitle">Import JSON</h2>
+      <textarea class="notes" id="importText" placeholder="Paste exported game JSON here"></textarea>
+      <div class="dialog-actions">
+        <button value="cancel" type="submit">Cancel</button>
+        <button id="importApplyBtn" class="primary-button" value="default" type="button">Import</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <div class="confetti" id="confetti" aria-hidden="true"></div>
+
+  <script>
+    /* =========================
+       Board Game Score Tracker
+       ========================= */
+    const STORAGE_KEY = "proBoardGameScoreTracker.v1";
+    const MAX_PLAYERS = 6;
+    const MIN_PLAYERS = 1;
+    const HISTORY_LIMIT = 100;
+    const DEFAULT_COLORS = ["#f87171", "#60a5fa", "#4ade80", "#c084fc", "#fb923c", "#fde047"];
+    const COLOR_BLIND_COLORS = ["#0072b2", "#e69f00", "#009e73", "#cc79a7", "#56b4e9", "#f0e442"];
+    const AVATARS = ["🧙", "🛡️", "🐉", "🚀", "🦊", "🤖", "👑", "🎲"];
+    const TEMPLATES = [
+      { name: "4 Players", players: 4, buttons: [1, 5, 10], target: "" },
+      { name: "Family Game", players: 4, buttons: [1, 5, 10], target: "" },
+      { name: "Poker Night", players: 6, buttons: [5, 10, 25], target: "" },
+      { name: "Catan", players: 4, buttons: [1, 2, 5], target: 10 },
+      { name: "Dominion", players: 4, buttons: [1, 3, 6], target: "" },
+      { name: "Trick-taking", players: 4, buttons: [1, 5, 10], target: "" }
+    ];
+
+    class Store {
+      static defaultState() {
+        return {
+          players: [
+            Store.player(1, "Alice", DEFAULT_COLORS[0], 0),
+            Store.player(2, "Bob", DEFAULT_COLORS[1], 0)
+          ],
+          winnerMode: "highest",
+          selectedId: null,
+          turnIndex: 0,
+          autoAdvanceTurn: false,
+          scoreHistory: [],
+          undo: [],
+          redo: [],
+          notes: "",
+          timer: { elapsed: 0, running: false, startedAt: 0 },
+          theme: document.documentElement.getAttribute("data-theme") || "dark",
+          muted: false,
+          haptics: true,
+          keepAwake: false,
+          compact: false,
+          largeScore: false,
+          colorBlind: false,
+          targetScore: "",
+          customButtons: [1, 5, 10],
+          presets: {},
+          archive: [],
+          lifetime: {},
+          historyCollapsed: false,
+          round: 1
+        };
+      }
+      static player(seed, name, color, score = 0) {
+        return {
+          id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
+          name,
+          score,
+          color,
+          avatar: AVATARS[(seed - 1) % AVATARS.length],
+          locked: false
+        };
+      }
+      static load() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return Store.defaultState();
+          const parsed = JSON.parse(raw);
+          return Store.normalize({ ...Store.defaultState(), ...parsed });
+        } catch {
+          return Store.defaultState();
+        }
+      }
+      static normalize(state) {
+        state.players = Array.isArray(state.players) && state.players.length ? state.players.slice(0, MAX_PLAYERS) : Store.defaultState().players;
+        state.players = state.players.map((p, i) => ({
+          id: p.id || (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${i}`),
+          name: String(p.name || `Player ${i + 1}`).slice(0, 20),
+          score: Number.isFinite(Number(p.score)) ? Number(p.score) : 0,
+          color: Store.color(p.color, DEFAULT_COLORS[i % DEFAULT_COLORS.length]),
+          avatar: p.avatar || AVATARS[i % AVATARS.length],
+          locked: Boolean(p.locked)
+        }));
+        if (!state.selectedId || !state.players.some(p => p.id === state.selectedId)) state.selectedId = state.players[0].id;
+        state.winnerMode = state.winnerMode === "lowest" ? "lowest" : "highest";
+        state.turnIndex = Math.min(Math.max(0, Number(state.turnIndex) || 0), state.players.length - 1);
+        state.customButtons = Array.isArray(state.customButtons) && state.customButtons.length ? state.customButtons.slice(0, 6).map(Number).filter(Number.isFinite) : [1, 5, 10];
+        state.scoreHistory = Array.isArray(state.scoreHistory) ? state.scoreHistory.slice(-5000) : [];
+        state.undo = Array.isArray(state.undo) ? state.undo.slice(-HISTORY_LIMIT) : [];
+        state.redo = Array.isArray(state.redo) ? state.redo.slice(-HISTORY_LIMIT) : [];
+        state.presets = state.presets && typeof state.presets === "object" ? state.presets : {};
+        state.archive = Array.isArray(state.archive) ? state.archive : [];
+        state.lifetime = state.lifetime && typeof state.lifetime === "object" ? state.lifetime : {};
+        return state;
+      }
+      static color(value, fallback) {
+        return /^#[0-9a-f]{6}$/i.test(String(value || "")) ? String(value) : fallback;
+      }
+      static save(state) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      }
+    }
+
+    class AudioFx {
+      constructor(app) { this.app = app; this.ctx = null; }
+      beep(freq = 420, duration = 0.035) {
+        if (this.app.state.muted) return;
+        try {
+          this.ctx = this.ctx || new (window.AudioContext || window.webkitAudioContext)();
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.frequency.value = freq;
+          gain.gain.value = 0.025;
+          osc.connect(gain).connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + duration);
+        } catch {}
+      }
+      fanfare() {
+        [523, 659, 784].forEach((f, i) => setTimeout(() => this.beep(f, 0.08), i * 90));
+      }
+    }
+
+    class App {
+      constructor() {
+        this.state = Store.load();
+        this.lastWinnerKey = "";
+        this.pendingConfirm = null;
+        this.customTargetId = null;
+        this.editTargetId = null;
+        this.dragId = null;
+        this.wakeLock = null;
+        this.audio = new AudioFx(this);
+        this.els = this.collectElements();
+        this.bind();
+        this.ensureTheme();
+        this.render();
+        this.startTimerLoop();
+        this.syncWakeLock();
+      }
+
+      collectElements() {
+        const ids = ["app","playersGrid","winnerLabel","winnerName","statsGrid","historyList","turnDisplay","timerDisplay","rollerDisplay","notesInput","toast","confetti","customDialog","customValue","editDialog","editName","editAvatar","editLocked","confirmDialog","confirmMessage","importDialog","importText","scoreGraph","archiveList","archiveSearch","presetName","templateButtons"];
+        return Object.fromEntries(ids.map(id => [id, document.getElementById(id)]));
+      }
+
+      bind() {
+        document.querySelectorAll("input[name='winnerMode']").forEach(r => r.addEventListener("change", e => this.mutate("winner mode", () => { this.state.winnerMode = e.target.value; })));
+        document.getElementById("addPlayerBtn").addEventListener("click", () => this.addPlayer());
+        document.getElementById("undoBtn").addEventListener("click", () => this.undo());
+        document.getElementById("redoBtn").addEventListener("click", () => this.redo());
+        document.getElementById("resetScoresBtn").addEventListener("click", () => this.confirm("Reset all scores to zero?", () => this.resetScores()));
+        document.getElementById("deleteAllBtn").addEventListener("click", () => this.confirm("Delete all players except one? This keeps your archive and presets.", () => this.deleteAllPlayers()));
+        document.getElementById("newGameBtn").addEventListener("click", () => this.confirm("Start a new game? Scores, notes, timer, and history will reset.", () => this.newGame()));
+        document.getElementById("endGameBtn").addEventListener("click", () => this.endGame());
+        document.getElementById("themeToggle").addEventListener("click", () => this.toggleTheme());
+        document.getElementById("fullscreenBtn").addEventListener("click", () => this.toggleFullscreen());
+        document.getElementById("shareBtn").addEventListener("click", () => this.copySummary());
+        document.getElementById("nextTurnBtn").addEventListener("click", () => this.setTurn(1));
+        document.getElementById("prevTurnBtn").addEventListener("click", () => this.setTurn(-1));
+        document.getElementById("timerStartBtn").addEventListener("click", () => this.startTimer());
+        document.getElementById("timerPauseBtn").addEventListener("click", () => this.pauseTimer());
+        document.getElementById("timerResetBtn").addEventListener("click", () => this.confirm("Reset the game timer?", () => this.resetTimer()));
+        document.getElementById("coinBtn").addEventListener("click", () => this.rollCoin());
+        document.getElementById("randomPlayerBtn").addEventListener("click", () => this.pickRandomPlayer());
+        document.getElementById("historyToggle").addEventListener("click", () => { this.state.historyCollapsed = !this.state.historyCollapsed; this.persistRender(); });
+        document.getElementById("savePresetBtn").addEventListener("click", () => this.savePreset());
+        document.getElementById("loadPresetBtn").addEventListener("click", () => this.loadPreset());
+        document.getElementById("exportJsonBtn").addEventListener("click", () => this.download("board-game-score-tracker.json", JSON.stringify(this.state, null, 2), "application/json"));
+        document.getElementById("copyJsonBtn").addEventListener("click", () => this.copyText(JSON.stringify(this.state, null, 2), "Game JSON copied"));
+        document.getElementById("importJsonBtn").addEventListener("click", () => this.els.importDialog.showModal());
+        document.getElementById("csvBtn").addEventListener("click", () => this.exportCsv());
+        document.getElementById("importApplyBtn").addEventListener("click", () => this.importJson());
+        document.querySelectorAll("[data-die]").forEach(btn => btn.addEventListener("click", () => this.rollDie(Number(btn.dataset.die))));
+        ["autoTurnToggle","muteToggle","hapticToggle","wakeToggle","compactToggle","largeScoreToggle","paletteToggle"].forEach(id => {
+          document.getElementById(id).addEventListener("change", e => this.updateSetting(id, e.target.checked));
+        });
+        document.getElementById("targetScoreInput").addEventListener("change", e => { this.state.targetScore = e.target.value; this.persistRender(); });
+        document.getElementById("customButtonsInput").addEventListener("change", e => this.setCustomButtons(e.target.value));
+        this.els.notesInput.addEventListener("input", e => { this.state.notes = e.target.value; Store.save(this.state); });
+        this.els.archiveSearch.addEventListener("input", () => this.renderArchive());
+        document.getElementById("applyCustomBtn").addEventListener("click", () => this.applyCustom());
+        document.getElementById("saveEditBtn").addEventListener("click", () => this.saveEdit());
+        document.getElementById("confirmOkBtn").addEventListener("click", () => { const fn = this.pendingConfirm; this.pendingConfirm = null; this.els.confirmDialog.close(); if (fn) fn(); });
+        document.getElementById("keypad").addEventListener("click", e => this.keypad(e));
+        document.addEventListener("keydown", e => this.shortcuts(e));
+        window.addEventListener("beforeunload", () => Store.save(this.state));
+        document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") this.syncWakeLock(); });
+      }
+
+      snapshot() {
+        const { players, winnerMode, selectedId, turnIndex, scoreHistory, notes, timer, round, lifetime } = this.state;
+        return JSON.stringify({ players, winnerMode, selectedId, turnIndex, scoreHistory, notes, timer, round, lifetime });
+      }
+
+      restore(snapshot) {
+        Object.assign(this.state, JSON.parse(snapshot));
+        this.state = Store.normalize(this.state);
+        this.persistRender();
+      }
+
+      mutate(label, fn) {
+        this.state.undo.push(this.snapshot());
+        if (this.state.undo.length > HISTORY_LIMIT) this.state.undo.shift();
+        this.state.redo = [];
+        fn();
+        this.state = Store.normalize(this.state);
+        this.persistRender();
+      }
+
+      persistRender() {
+        Store.save(this.state);
+        this.render();
+      }
+
+      render() {
+        document.documentElement.setAttribute("data-theme", this.state.theme);
+        this.els.playersGrid.classList.toggle("large-score", this.state.largeScore);
+        this.els.app.classList.toggle("compact", this.state.compact || this.state.players.length >= 6);
+        document.querySelector(`input[name='winnerMode'][value='${this.state.winnerMode}']`).checked = true;
+        this.renderWinner();
+        this.renderPlayers();
+        this.renderStats();
+        this.renderHistory();
+        this.renderTurn();
+        this.renderTimer();
+        this.renderGraph();
+        this.renderArchive();
+        this.renderTemplates();
+        this.syncInputs();
+      }
+
+      renderPlayers() {
+        const leaders = new Set(this.getWinners().players.map(p => p.id));
+        this.els.playersGrid.innerHTML = this.state.players.map((p, index) => {
+          const buttons = this.state.customButtons.slice(0, 3);
+          const extras = buttons.map(v => `<button class="score-button" data-score="${v}" aria-label="Add ${v} to ${this.escape(p.name)}">+${v}</button>`).join("");
+          const minus = buttons.map(v => `<button class="score-button" data-score="${-v}" aria-label="Subtract ${v} from ${this.escape(p.name)}">-${v}</button>`).join("");
+          return `<article class="player-card ${leaders.has(p.id) ? "leader" : ""} ${this.state.turnIndex === index ? "current-turn" : ""} ${p.locked ? "locked" : ""}" style="--player-color:${p.color}" data-id="${p.id}" draggable="true" tabindex="0" aria-label="${this.escape(p.name)} score ${p.score}">
+            <button class="drag-handle" title="Drag to reorder" aria-label="Drag ${this.escape(p.name)}">↕</button>
+            <header class="player-head">
+              <button class="avatar" data-action="edit" aria-label="Edit ${this.escape(p.name)}">${this.escape(p.avatar)}</button>
+              <div class="name-wrap">
+                <h2 class="player-name" data-action="edit">${this.escape(p.name)}</h2>
+                <div class="rank-line">Rank ${this.rankOf(p.id)} • ${p.locked ? "Locked" : "Tap name to edit"}</div>
+              </div>
+              <input class="color-input" type="color" value="${p.color}" aria-label="Pick ${this.escape(p.name)} color" ${p.locked ? "disabled" : ""}>
+            </header>
+            <div class="score-zone" data-action="select">
+              <div class="score" id="score-${p.id}">${p.score}</div>
+              <div class="score-delta" id="delta-${p.id}"></div>
+            </div>
+            <div class="quick-grid">${extras}${minus}</div>
+            <div class="big-controls">
+              <button class="big-score" data-score="1" aria-label="Large add one">+</button>
+              <button class="big-score" data-score="-1" aria-label="Large subtract one">−</button>
+            </div>
+            <div class="player-actions">
+              <button data-action="custom">Custom</button>
+              <button data-action="reset">Reset</button>
+              <button data-action="lock">${p.locked ? "Unlock" : "Lock"}</button>
+              <button data-action="delete" ${this.state.players.length <= MIN_PLAYERS ? "disabled" : ""}>Delete</button>
+            </div>
+          </article>`;
+        }).join("");
+        this.bindPlayerCards();
+      }
+
+      bindPlayerCards() {
+        this.els.playersGrid.querySelectorAll(".player-card").forEach(card => {
+          const id = card.dataset.id;
+          let pressTimer = null;
+          let startX = 0;
+          card.addEventListener("click", e => this.playerClick(e, id));
+          card.addEventListener("dblclick", () => this.openEdit(id));
+          card.addEventListener("pointerdown", e => { startX = e.clientX; pressTimer = setTimeout(() => this.resetPlayer(id), 650); });
+          card.addEventListener("pointerup", e => {
+            clearTimeout(pressTimer);
+            const dx = e.clientX - startX;
+            if (Math.abs(dx) > 80) this.changeScore(id, dx > 0 ? 1 : -1);
+          });
+          card.addEventListener("pointercancel", () => clearTimeout(pressTimer));
+          card.addEventListener("dragstart", e => { this.dragId = id; e.dataTransfer.effectAllowed = "move"; });
+          card.addEventListener("dragover", e => e.preventDefault());
+          card.addEventListener("drop", e => { e.preventDefault(); this.reorder(this.dragId, id); });
+          card.querySelector(".color-input").addEventListener("input", e => this.setColor(id, e.target.value));
+        });
+      }
+
+      playerClick(e, id) {
+        const action = e.target.closest("[data-action]")?.dataset.action;
+        const scoreButton = e.target.closest("[data-score]");
+        this.state.selectedId = id;
+        Store.save(this.state);
+        if (scoreButton) this.changeScore(id, Number(scoreButton.dataset.score));
+        if (action === "edit") this.openEdit(id);
+        if (action === "custom") this.openCustom(id);
+        if (action === "reset") this.resetPlayer(id);
+        if (action === "delete") this.deletePlayer(id);
+        if (action === "lock") this.toggleLock(id);
+      }
+
+      renderWinner() {
+        const result = this.getWinners();
+        const tied = result.players.length > 1;
+        const targetReached = this.isGameOver();
+        this.els.winnerLabel.textContent = targetReached ? "🏆 Winner" : (this.state.winnerMode === "highest" ? "🏆 Leader" : "🏆 Low Score");
+        this.els.winnerName.textContent = tied ? `Tie: ${result.players.map(p => p.name).join(", ")}` : result.players[0]?.name || "No players";
+        const key = `${targetReached}-${this.els.winnerName.textContent}`;
+        if (targetReached && key !== this.lastWinnerKey) {
+          this.lastWinnerKey = key;
+          this.celebrate();
+        }
+      }
+
+      getWinners() {
+        if (!this.state.players.length) return { players: [], score: 0 };
+        const scores = this.state.players.map(p => p.score);
+        const score = this.state.winnerMode === "highest" ? Math.max(...scores) : Math.min(...scores);
+        return { score, players: this.state.players.filter(p => p.score === score) };
+      }
+
+      isGameOver() {
+        const target = Number(this.state.targetScore);
+        if (!Number.isFinite(target) || !target) return false;
+        return this.state.winnerMode === "highest"
+          ? this.state.players.some(p => p.score >= target)
+          : this.state.players.some(p => p.score <= target);
+      }
+
+      rankOf(id) {
+        const sorted = [...this.state.players].sort((a, b) => this.state.winnerMode === "highest" ? b.score - a.score : a.score - b.score);
+        return sorted.findIndex(p => p.id === id) + 1;
+      }
+
+      renderStats() {
+        const players = this.state.players;
+        const scores = players.map(p => p.score);
+        const leader = this.getWinners().players.map(p => p.name).join(", ");
+        const sorted = [...players].sort((a, b) => a.score - b.score);
+        const gains = this.state.scoreHistory.filter(h => h.delta > 0).map(h => h.delta);
+        const losses = this.state.scoreHistory.filter(h => h.delta < 0).map(h => h.delta);
+        const data = [
+          ["Current Leader", leader || "-"],
+          ["Last Place", this.state.winnerMode === "highest" ? sorted[0]?.name : sorted[sorted.length - 1]?.name],
+          ["Average Score", scores.length ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1) : "0"],
+          ["Highest Score", Math.max(...scores)],
+          ["Lowest Score", Math.min(...scores)],
+          ["Largest Gain", gains.length ? Math.max(...gains) : 0],
+          ["Largest Loss", losses.length ? Math.min(...losses) : 0],
+          ["Turns", this.state.scoreHistory.length],
+          ["Points Awarded", gains.reduce((a, b) => a + b, 0)],
+          ["Points Removed", Math.abs(losses.reduce((a, b) => a + b, 0))]
+        ];
+        this.els.statsGrid.innerHTML = data.map(([label, value]) => `<div class="stat"><span class="stat-label">${label}</span><strong class="stat-value">${this.escape(String(value ?? "-"))}</strong></div>`).join("");
+      }
+
+      renderHistory() {
+        document.getElementById("historyToggle").textContent = this.state.historyCollapsed ? "Expand" : "Collapse";
+        if (this.state.historyCollapsed) { this.els.historyList.innerHTML = ""; return; }
+        const items = this.state.scoreHistory.slice(-80).reverse();
+        this.els.historyList.innerHTML = items.length ? items.map(h => `<div class="history-item">
+          <span><strong>${this.escape(h.name)}</strong> ${h.delta >= 0 ? "+" : ""}${h.delta} <small class="muted">${new Date(h.time).toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"})}</small></span>
+          <button data-undo-history="${h.id}" type="button">Undo</button>
+        </div>`).join("") : `<p class="muted">No score changes yet.</p>`;
+        this.els.historyList.querySelectorAll("[data-undo-history]").forEach(btn => btn.addEventListener("click", () => this.undoHistory(btn.dataset.undoHistory)));
+      }
+
+      renderTurn() {
+        const current = this.state.players[this.state.turnIndex] || this.state.players[0];
+        this.els.turnDisplay.textContent = current ? `▶ ${current.name}'s Turn` : "No players";
+      }
+
+      renderTimer() {
+        this.els.timerDisplay.textContent = this.formatTime(this.currentElapsed());
+      }
+
+      renderGraph() {
+        const svg = this.els.scoreGraph;
+        const w = 320, h = 150, pad = 16;
+        svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+        const history = this.state.scoreHistory.slice(-200);
+        if (!history.length) { svg.innerHTML = `<text x="${pad}" y="${h / 2}" fill="currentColor">No score data yet</text>`; return; }
+        const series = this.state.players.map(p => {
+          let score = p.score;
+          const points = [[history.length, score]];
+          for (let i = history.length - 1; i >= 0; i--) {
+            if (history[i].playerId === p.id) score -= history[i].delta;
+            points.unshift([i, score]);
+          }
+          return { p, points };
+        });
+        const values = series.flatMap(s => s.points.map(point => point[1]));
+        const min = Math.min(...values), max = Math.max(...values), span = max - min || 1;
+        const scaleX = i => pad + (i / Math.max(history.length, 1)) * (w - pad * 2);
+        const scaleY = v => h - pad - ((v - min) / span) * (h - pad * 2);
+        svg.innerHTML = series.map(s => `<polyline fill="none" stroke="${s.p.color}" stroke-width="3" points="${s.points.map(([i, v]) => `${scaleX(i).toFixed(1)},${scaleY(v).toFixed(1)}`).join(" ")}"></polyline>`).join("");
+      }
+
+      renderArchive() {
+        const q = this.els.archiveSearch.value.toLowerCase();
+        const items = this.state.archive.filter(g => JSON.stringify(g).toLowerCase().includes(q)).slice(-20).reverse();
+        this.els.archiveList.innerHTML = items.length ? items.map(g => `<article class="archive-card">
+          <strong>${new Date(g.endedAt).toLocaleString()}</strong>
+          <p class="muted">${this.escape(g.summary)}</p>
+        </article>`).join("") : `<p class="muted">No completed games archived yet.</p>`;
+      }
+
+      renderTemplates() {
+        this.els.templateButtons.innerHTML = TEMPLATES.map(t => `<button type="button" data-template="${this.escape(t.name)}">${this.escape(t.name)}</button>`).join("");
+        this.els.templateButtons.querySelectorAll("[data-template]").forEach(btn => btn.addEventListener("click", () => this.applyTemplate(btn.dataset.template)));
+      }
+
+      syncInputs() {
+        document.getElementById("autoTurnToggle").checked = this.state.autoAdvanceTurn;
+        document.getElementById("muteToggle").checked = this.state.muted;
+        document.getElementById("hapticToggle").checked = this.state.haptics;
+        document.getElementById("wakeToggle").checked = this.state.keepAwake;
+        document.getElementById("compactToggle").checked = this.state.compact;
+        document.getElementById("largeScoreToggle").checked = this.state.largeScore;
+        document.getElementById("paletteToggle").checked = this.state.colorBlind;
+        document.getElementById("targetScoreInput").value = this.state.targetScore;
+        document.getElementById("customButtonsInput").value = this.state.customButtons.join(",");
+        this.els.notesInput.value = this.state.notes;
+      }
+
+      changeScore(id, delta) {
+        const p = this.state.players.find(player => player.id === id);
+        if (!p || p.locked || !Number.isFinite(delta) || delta === 0) return;
+        this.mutate("score change", () => {
+          p.score += delta;
+          this.state.selectedId = id;
+          this.state.scoreHistory.push({ id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}`, playerId: id, name: p.name, delta, score: p.score, time: Date.now() });
+          if (this.state.scoreHistory.length > 5000) this.state.scoreHistory.shift();
+          if (this.state.autoAdvanceTurn) this.state.turnIndex = (this.state.turnIndex + 1) % this.state.players.length;
+        });
+        this.animateScore(id, delta);
+        this.feedback(delta > 0 ? 620 : 220);
+      }
+
+      animateScore(id, delta) {
+        requestAnimationFrame(() => {
+          const score = document.getElementById(`score-${id}`);
+          const badge = document.getElementById(`delta-${id}`);
+          if (!score || !badge) return;
+          score.classList.remove("pulse");
+          badge.className = `score-delta ${delta < 0 ? "negative" : ""}`;
+          void score.offsetWidth;
+          score.classList.add("pulse");
+          badge.textContent = `${delta > 0 ? "+" : ""}${delta}`;
+          badge.classList.add("show");
+        });
+      }
+
+      addPlayer() {
+        if (this.state.players.length >= MAX_PLAYERS) { this.toast("Maximum 6 players"); return; }
+        this.mutate("add player", () => {
+          const i = this.state.players.length;
+          const palette = this.state.colorBlind ? COLOR_BLIND_COLORS : DEFAULT_COLORS;
+          this.state.players.push(Store.player(i + 1, `Player ${i + 1}`, palette[i % palette.length], 0));
+        });
+      }
+
+      deletePlayer(id) {
+        if (this.state.players.length <= MIN_PLAYERS) return;
+        const p = this.state.players.find(player => player.id === id);
+        this.confirm(`Delete ${p?.name || "this player"}?`, () => this.mutate("delete player", () => {
+          this.state.players = this.state.players.filter(player => player.id !== id);
+          this.state.turnIndex = Math.min(this.state.turnIndex, this.state.players.length - 1);
+        }));
+      }
+
+      deleteAllPlayers() {
+        this.mutate("delete all players", () => {
+          this.state.players = [Store.player(1, "Player 1", DEFAULT_COLORS[0], 0)];
+          this.state.scoreHistory = [];
+          this.state.turnIndex = 0;
+          this.state.selectedId = this.state.players[0].id;
+        });
+      }
+
+      resetScores() {
+        this.mutate("reset scores", () => {
+          this.state.players.forEach(p => { p.score = 0; });
+          this.state.scoreHistory = [];
+        });
+      }
+
+      resetPlayer(id) {
+        const p = this.state.players.find(player => player.id === id);
+        if (!p || p.locked) return;
+        this.mutate("reset player", () => {
+          p.score = 0;
+          this.state.scoreHistory.push({ id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}`, playerId: id, name: p.name, delta: 0, score: 0, time: Date.now(), reset: true });
+        });
+        this.toast(`${p.name} reset`);
+      }
+
+      newGame() {
+        this.mutate("new game", () => {
+          this.state.players.forEach((p, i) => { p.score = 0; p.name = p.name || `Player ${i + 1}`; });
+          this.state.scoreHistory = [];
+          this.state.notes = "";
+          this.state.timer = { elapsed: 0, running: false, startedAt: 0 };
+          this.state.round += 1;
+        });
+      }
+
+      endGame() {
+        const ranking = this.ranking();
+        const summary = ranking.map((p, i) => `${["🥇","🥈","🥉"][i] || `${i + 1}.`} ${p.name} - ${p.score}`).join("\n");
+        this.mutate("end game", () => {
+          this.state.archive.push({ endedAt: Date.now(), summary, players: ranking, notes: this.state.notes, duration: this.currentElapsed() });
+          ranking.forEach((p, i) => {
+            this.state.lifetime[p.name] = this.state.lifetime[p.name] || { games: 0, wins: 0, total: 0 };
+            this.state.lifetime[p.name].games += 1;
+            this.state.lifetime[p.name].wins += i === 0 ? 1 : 0;
+            this.state.lifetime[p.name].total += p.score;
+          });
+        });
+        this.copyText(`Game Results\n\n${summary}`, "Results copied and archived");
+        this.celebrate();
+      }
+
+      ranking() {
+        return [...this.state.players].sort((a, b) => this.state.winnerMode === "highest" ? b.score - a.score : a.score - b.score);
+      }
+
+      undo() {
+        const snap = this.state.undo.pop();
+        if (!snap) return this.toast("Nothing to undo");
+        this.state.redo.push(this.snapshot());
+        this.restore(snap);
+      }
+
+      redo() {
+        const snap = this.state.redo.pop();
+        if (!snap) return this.toast("Nothing to redo");
+        this.state.undo.push(this.snapshot());
+        this.restore(snap);
+      }
+
+      undoHistory(id) {
+        const entry = this.state.scoreHistory.find(h => h.id === id);
+        if (!entry || entry.reset) return this.toast("Use Undo for reset entries");
+        this.changeScore(entry.playerId, -entry.delta);
+      }
+
+      openCustom(id) {
+        this.customTargetId = id;
+        this.els.customValue.value = "";
+        this.els.customDialog.showModal();
+        this.els.customValue.focus();
+      }
+
+      applyCustom() {
+        const value = Number.parseInt(this.els.customValue.value, 10);
+        if (!Number.isFinite(value) || value === 0) return this.toast("Enter a non-zero integer");
+        this.els.customDialog.close();
+        this.changeScore(this.customTargetId, value);
+      }
+
+      keypad(e) {
+        const value = e.target.closest("button")?.value;
+        if (!value) return;
+        if (value === "back") this.els.customValue.value = this.els.customValue.value.slice(0, -1);
+        else if (value === "-") this.els.customValue.value = this.els.customValue.value.startsWith("-") ? this.els.customValue.value.slice(1) : `-${this.els.customValue.value}`;
+        else this.els.customValue.value += value;
+      }
+
+      openEdit(id) {
+        const p = this.state.players.find(player => player.id === id);
+        if (!p) return;
+        this.editTargetId = id;
+        this.els.editName.value = p.name;
+        this.els.editAvatar.value = p.avatar;
+        this.els.editLocked.checked = p.locked;
+        this.els.editDialog.showModal();
+      }
+
+      saveEdit() {
+        const id = this.editTargetId;
+        this.els.editDialog.close();
+        this.mutate("edit player", () => {
+          const p = this.state.players.find(player => player.id === id);
+          if (!p) return;
+          const index = this.state.players.findIndex(player => player.id === id);
+          p.name = (this.els.editName.value.trim() || `Player ${index + 1}`).slice(0, 20);
+          p.avatar = this.els.editAvatar.value.trim() || p.avatar;
+          p.locked = this.els.editLocked.checked;
+        });
+      }
+
+      setColor(id, color) {
+        const safeColor = Store.color(color, DEFAULT_COLORS[0]);
+        this.mutate("color change", () => {
+          const p = this.state.players.find(player => player.id === id);
+          if (p && !p.locked) p.color = safeColor;
+        });
+      }
+
+      toggleLock(id) {
+        this.mutate("toggle lock", () => {
+          const p = this.state.players.find(player => player.id === id);
+          if (p) p.locked = !p.locked;
+        });
+      }
+
+      reorder(fromId, toId) {
+        if (!fromId || fromId === toId) return;
+        this.mutate("reorder players", () => {
+          const from = this.state.players.findIndex(p => p.id === fromId);
+          const to = this.state.players.findIndex(p => p.id === toId);
+          const [item] = this.state.players.splice(from, 1);
+          this.state.players.splice(to, 0, item);
+          this.state.turnIndex = Math.min(this.state.turnIndex, this.state.players.length - 1);
+        });
+      }
+
+      setTurn(offset) {
+        this.state.turnIndex = (this.state.turnIndex + offset + this.state.players.length) % this.state.players.length;
+        this.persistRender();
+      }
+
+      startTimer() {
+        if (this.state.timer.running) return;
+        this.state.timer.running = true;
+        this.state.timer.startedAt = Date.now();
+        this.persistRender();
+      }
+
+      pauseTimer() {
+        if (!this.state.timer.running) return;
+        this.state.timer.elapsed = this.currentElapsed();
+        this.state.timer.running = false;
+        this.state.timer.startedAt = 0;
+        this.persistRender();
+      }
+
+      resetTimer() {
+        this.state.timer = { elapsed: 0, running: false, startedAt: 0 };
+        this.persistRender();
+      }
+
+      currentElapsed() {
+        return this.state.timer.elapsed + (this.state.timer.running ? Date.now() - this.state.timer.startedAt : 0);
+      }
+
+      startTimerLoop() {
+        setInterval(() => { if (this.state.timer.running) this.renderTimer(); }, 500);
+      }
+
+      formatTime(ms) {
+        const total = Math.floor(ms / 1000);
+        const h = String(Math.floor(total / 3600)).padStart(2, "0");
+        const m = String(Math.floor((total % 3600) / 60)).padStart(2, "0");
+        const s = String(total % 60).padStart(2, "0");
+        return `${h}:${m}:${s}`;
+      }
+
+      rollDie(sides) {
+        const result = Math.floor(Math.random() * sides) + 1;
+        this.showRoll(`d${sides}: ${result}`);
+      }
+
+      rollCoin() {
+        this.showRoll(Math.random() < 0.5 ? "Heads" : "Tails");
+      }
+
+      pickRandomPlayer() {
+        const p = this.state.players[Math.floor(Math.random() * this.state.players.length)];
+        this.showRoll(p ? `${p.avatar} ${p.name}` : "No players");
+      }
+
+      showRoll(text) {
+        this.els.rollerDisplay.textContent = text;
+        this.els.rollerDisplay.classList.remove("spin");
+        void this.els.rollerDisplay.offsetWidth;
+        this.els.rollerDisplay.classList.add("spin");
+        this.feedback(520);
+      }
+
+      savePreset() {
+        const name = this.els.presetName.value.trim() || "Custom";
+        this.state.presets[name] = {
+          players: this.state.players.map(p => ({ ...p })),
+          winnerMode: this.state.winnerMode,
+          customButtons: this.state.customButtons,
+          targetScore: this.state.targetScore,
+          compact: this.state.compact,
+          largeScore: this.state.largeScore
+        };
+        this.persistRender();
+        this.toast(`Saved preset: ${name}`);
+      }
+
+      loadPreset() {
+        const names = Object.keys(this.state.presets);
+        const name = this.els.presetName.value.trim() || names[0];
+        const preset = this.state.presets[name];
+        if (!preset) return this.toast("Preset not found");
+        this.mutate("load preset", () => {
+          Object.assign(this.state, preset);
+          this.state.players = preset.players.map((p, i) => ({ ...p, id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${i}`, score: Number(p.score) || 0 }));
+          this.state.scoreHistory = [];
+          this.state.turnIndex = 0;
+          this.state.selectedId = this.state.players[0].id;
+        });
+      }
+
+      applyTemplate(name) {
+        const t = TEMPLATES.find(template => template.name === name);
+        if (!t) return;
+        this.mutate("apply template", () => {
+          const palette = this.state.colorBlind ? COLOR_BLIND_COLORS : DEFAULT_COLORS;
+          this.state.players = Array.from({ length: t.players }, (_, i) => Store.player(i + 1, `Player ${i + 1}`, palette[i % palette.length], 0));
+          this.state.customButtons = t.buttons;
+          this.state.targetScore = String(t.target || "");
+          this.state.scoreHistory = [];
+          this.state.turnIndex = 0;
+          this.state.selectedId = this.state.players[0].id;
+        });
+      }
+
+      updateSetting(id, value) {
+        const map = {
+          autoTurnToggle: "autoAdvanceTurn",
+          muteToggle: "muted",
+          hapticToggle: "haptics",
+          wakeToggle: "keepAwake",
+          compactToggle: "compact",
+          largeScoreToggle: "largeScore",
+          paletteToggle: "colorBlind"
+        };
+        this.state[map[id]] = value;
+        if (id === "paletteToggle") this.applyPalette(value);
+        this.persistRender();
+        if (id === "wakeToggle") this.syncWakeLock();
+      }
+
+      applyPalette(colorBlind) {
+        const palette = colorBlind ? COLOR_BLIND_COLORS : DEFAULT_COLORS;
+        this.state.players.forEach((p, i) => { p.color = palette[i % palette.length]; });
+      }
+
+      setCustomButtons(text) {
+        const values = text.split(",").map(v => Number.parseInt(v.trim().replace("+", ""), 10)).filter(Number.isFinite).filter(v => v > 0).slice(0, 6);
+        if (!values.length) return this.toast("Add at least one positive custom button");
+        this.state.customButtons = values;
+        this.persistRender();
+      }
+
+      toggleTheme() {
+        this.state.theme = this.state.theme === "dark" ? "light" : "dark";
+        this.persistRender();
+      }
+
+      ensureTheme() {
+        document.documentElement.setAttribute("data-theme", this.state.theme);
+      }
+
+      async toggleFullscreen() {
+        if (!document.fullscreenElement) await document.documentElement.requestFullscreen?.();
+        else await document.exitFullscreen?.();
+      }
+
+      async syncWakeLock() {
+        try {
+          if (!("wakeLock" in navigator)) return;
+          if (this.state.keepAwake && !this.wakeLock) this.wakeLock = await navigator.wakeLock.request("screen");
+          if (!this.state.keepAwake && this.wakeLock) { await this.wakeLock.release(); this.wakeLock = null; }
+        } catch {
+          this.toast("Wake Lock unavailable");
+        }
+      }
+
+      shortcuts(e) {
+        if (e.ctrlKey && e.key.toLowerCase() === "z") { e.preventDefault(); this.undo(); return; }
+        if (e.ctrlKey && e.key.toLowerCase() === "y") { e.preventDefault(); this.redo(); return; }
+        const selected = this.state.selectedId || this.state.players[0]?.id;
+        if (e.key === "ArrowUp") { e.preventDefault(); this.changeScore(selected, 1); }
+        if (e.key === "ArrowDown") { e.preventDefault(); this.changeScore(selected, -1); }
+        if (e.key === "Delete") { e.preventDefault(); this.resetPlayer(selected); }
+      }
+
+      copySummary() {
+        const ranking = this.ranking();
+        const summary = `Game Results\n\n${ranking.map((p, i) => `${["🥇","🥈","🥉"][i] || `${i + 1}.`} ${p.name} - ${p.score}`).join("\n")}`;
+        this.copyText(summary, "Summary copied");
+      }
+
+      async copyText(text, message) {
+        try {
+          await navigator.clipboard.writeText(text);
+          this.toast(message);
+        } catch {
+          this.download("game-results.txt", text, "text/plain");
+        }
+      }
+
+      download(filename, content, type) {
+        const blob = new Blob([content], { type });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+
+      importJson() {
+        try {
+          const imported = JSON.parse(this.els.importText.value);
+          this.state = Store.normalize({ ...Store.defaultState(), ...imported });
+          this.els.importDialog.close();
+          this.persistRender();
+          this.toast("Import complete");
+        } catch {
+          this.toast("Invalid JSON");
+        }
+      }
+
+      exportCsv() {
+        const rows = [["endedAt","summary","durationMs"], ...this.state.archive.map(g => [new Date(g.endedAt).toISOString(), g.summary.replace(/\n/g, " | "), g.duration])];
+        const csv = rows.map(row => row.map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
+        this.download("board-game-archive.csv", csv, "text/csv");
+      }
+
+      confirm(message, fn) {
+        this.pendingConfirm = fn;
+        this.els.confirmMessage.textContent = message;
+        this.els.confirmDialog.showModal();
+      }
+
+      celebrate() {
+        this.audio.fanfare();
+        this.els.confetti.innerHTML = Array.from({ length: 48 }, (_, i) => `<i style="left:${Math.random() * 100}%;animation-delay:${Math.random() * 300}ms;background:${this.state.players[i % this.state.players.length]?.color || "var(--cp-accent)"}"></i>`).join("");
+        setTimeout(() => { this.els.confetti.innerHTML = ""; }, 1900);
+      }
+
+      feedback(freq) {
+        this.audio.beep(freq);
+        if (this.state.haptics && navigator.vibrate) navigator.vibrate(18);
+      }
+
+      toast(text) {
+        this.els.toast.textContent = text;
+        this.els.toast.classList.add("show");
+        clearTimeout(this.toastTimer);
+        this.toastTimer = setTimeout(() => this.els.toast.classList.remove("show"), 1800);
+      }
+
+      escape(value) {
+        return String(value).replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[ch]));
+      }
+    }
+
+    window.addEventListener("DOMContentLoaded", () => new App());
+  </script>
+</body>
+</html>
