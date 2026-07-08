@@ -262,7 +262,7 @@
       --player-color: var(--cp-accent);
       position: relative;
       display: grid;
-      grid-template-rows: 60px 1fr;
+      grid-template-rows: 86px 1fr;
       gap: 0;
       padding: 0;
       border: 0;
@@ -298,6 +298,7 @@
       align-items: center;
       padding: 8px 14px;
       background: var(--cp-sheen);
+      min-height: 86px;
     }
     .avatar {
       width: 42px;
@@ -325,10 +326,14 @@
     }
     .rank-line {
       color: inherit;
-      font-size: 0.85rem;
-      margin-top: 3px;
+      font-size: clamp(0.72rem, 2.3vw, 0.92rem);
+      line-height: 1.1;
+      margin-top: 2px;
       opacity: 0.68;
       text-align: center;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     .color-input {
       width: 48px;
@@ -381,7 +386,7 @@
     }
     .big-controls {
       position: absolute;
-      inset: 60px 0 0;
+      inset: 86px 0 0;
       display: grid;
       grid-template-columns: 76px minmax(0, 1fr) 76px;
       gap: 0;
