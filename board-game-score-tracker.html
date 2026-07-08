@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="description" content="Offline board game score tracker for fast table play.">
   <title>Board Game Score Tracker</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='50' font-size='48'%3E%F0%9F%8E%B2%3C/text%3E%3C/svg%3E">
   <link rel="manifest" id="manifestLink">
   <script>
     (() => {
@@ -120,12 +121,13 @@
       outline-offset: 2px;
     }
     .app {
-      width: min(1440px, 100%);
+      width: min(940px, 100%);
       margin: 0 auto;
       min-height: 100svh;
-      padding: 12px;
+      padding: 12px 16px 24px;
       display: grid;
-      gap: 12px;
+      gap: 10px;
+      align-content: start;
     }
     .topbar {
       position: sticky;
@@ -133,10 +135,10 @@
       z-index: 20;
       display: grid;
       grid-template-columns: 1fr auto;
-      gap: 12px;
-      align-items: stretch;
-      padding: 8px 0;
-      background: linear-gradient(to bottom, var(--cp-bg), transparent);
+      gap: 8px;
+      align-items: center;
+      padding: 10px 0 8px;
+      background: var(--cp-bg);
     }
     .winner-card, .toolbar, .panel, .player-card, dialog {
       background: var(--cp-surface);
@@ -145,11 +147,14 @@
       box-shadow: 0 0 2px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.14);
     }
     .winner-card {
-      min-height: 76px;
-      padding: 12px 16px;
+      min-height: 52px;
+      padding: 8px 4px;
       display: grid;
-      gap: 6px;
+      gap: 2px;
       overflow: hidden;
+      background: transparent;
+      border-color: transparent;
+      box-shadow: none;
     }
     .winner-label {
       color: var(--cp-text-muted);
@@ -158,10 +163,12 @@
       text-transform: uppercase;
     }
     .winner-name {
-      font-size: clamp(1.45rem, 5vw, 2.8rem);
+      font-size: clamp(1.35rem, 6vw, 2.05rem);
       line-height: 1;
       font-weight: 900;
-      text-wrap: balance;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     .winner-name.crown { animation: crown 1.8s ease-in-out infinite; }
     .mode-row, .mini-row {
@@ -169,6 +176,17 @@
       flex-wrap: wrap;
       gap: 8px;
       align-items: center;
+    }
+    .winner-card .mode-row {
+      max-height: 0;
+      opacity: 0;
+      overflow: hidden;
+      transition: max-height 180ms ease, opacity 180ms ease;
+    }
+    .winner-card:focus-within .mode-row,
+    .winner-card:hover .mode-row {
+      max-height: 72px;
+      opacity: 1;
     }
     .mode-pill {
       display: inline-flex;
@@ -184,12 +202,15 @@
     }
     .mode-pill input { accent-color: var(--cp-accent); }
     .toolbar {
-      padding: 8px;
+      padding: 0;
       display: grid;
       grid-auto-flow: column;
-      gap: 8px;
+      gap: 6px;
       align-content: center;
       align-items: center;
+      background: transparent;
+      border-color: transparent;
+      box-shadow: none;
     }
     .icon-button, .primary-button, .danger-button, .ghost-button {
       display: inline-flex;
@@ -200,15 +221,20 @@
       white-space: nowrap;
       padding: 0 14px;
     }
+    .toolbar .ghost-button {
+      width: 48px;
+      padding: 0;
+      font-size: 1.25rem;
+    }
     .fab {
-      width: 62px;
-      height: 62px;
-      border-radius: 50%;
-      background: var(--cp-accent);
-      color: var(--cp-accent-fg);
-      border-color: var(--cp-accent);
-      font-size: 2rem;
-      box-shadow: var(--cp-shadow);
+      width: 48px;
+      height: 48px;
+      border-radius: 0.625rem;
+      background: var(--cp-surface-soft);
+      color: var(--cp-text);
+      border-color: var(--cp-border-strong);
+      font-size: 1.8rem;
+      box-shadow: none;
     }
     .primary-button {
       background: var(--cp-accent);
@@ -223,14 +249,16 @@
     .ghost-button { background: transparent; }
     .layout {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 360px;
+      grid-template-columns: 1fr;
       gap: 12px;
       align-items: start;
+      min-width: 0;
+      overflow: hidden;
     }
     .players-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
-      gap: 12px;
+      grid-template-columns: 1fr;
+      gap: 8px;
       align-items: stretch;
     }
     .players-grid.large-score { grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)); }
@@ -238,60 +266,73 @@
       --player-color: var(--cp-accent);
       position: relative;
       display: grid;
-      gap: 10px;
-      padding: 12px;
-      border-left: 8px solid var(--player-color);
-      min-height: 360px;
+      grid-template-rows: 60px 1fr;
+      gap: 0;
+      padding: 0;
+      border: 0;
+      background: var(--player-color);
+      color: var(--cp-surface);
+      min-height: clamp(132px, 22svh, 220px);
       overflow: hidden;
       touch-action: pan-y;
+      max-width: 100%;
     }
     .player-card.leader {
       border-color: var(--player-color);
-      box-shadow: 0 0 0 2px var(--cp-highlight), 0 0 2px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.14);
+      box-shadow: 0 0 0 3px var(--cp-highlight), 0 0 2px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.14);
     }
-    .player-card.current-turn { background: linear-gradient(135deg, var(--cp-highlight), var(--cp-surface) 48%); }
+    .player-card.current-turn { box-shadow: 0 0 0 3px var(--cp-warning), 0 0 2px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.14); }
     .player-card.locked { opacity: 0.72; }
     .drag-handle {
       position: absolute;
-      inset: 8px 8px auto auto;
+      inset: 10px auto auto 10px;
       width: 36px;
       height: 36px;
       min-height: 36px;
-      color: var(--cp-text-muted);
+      color: inherit;
+      opacity: 0.55;
+      background: transparent;
+      border: 0;
+      font-size: 1.55rem;
     }
     .player-head {
       display: grid;
-      grid-template-columns: auto 1fr auto;
+      grid-template-columns: 48px 1fr 48px;
       gap: 8px;
       align-items: center;
-      padding-right: 36px;
+      padding: 8px 14px;
+      background: var(--cp-sheen);
     }
     .avatar {
-      width: 48px;
-      height: 48px;
+      width: 42px;
+      height: 42px;
       display: grid;
       place-items: center;
       border-radius: 50%;
-      background: var(--cp-surface-soft);
-      border: 1px solid var(--cp-border);
-      font-size: 1.5rem;
+      background: transparent;
+      border: 0;
+      font-size: 1.3rem;
+      opacity: 0.75;
     }
     .name-wrap { min-width: 0; }
     .player-name {
       margin: 0;
-      color: var(--player-color);
-      font-size: 1.35rem;
-      font-weight: 900;
+      color: inherit;
+      font-size: clamp(1.55rem, 6vw, 2.2rem);
+      font-weight: 500;
       line-height: 1.05;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      cursor: text;
+      cursor: pointer;
+      text-align: center;
     }
     .rank-line {
-      color: var(--cp-text-muted);
+      color: inherit;
       font-size: 0.85rem;
       margin-top: 3px;
+      opacity: 0.68;
+      text-align: center;
     }
     .color-input {
       width: 48px;
@@ -305,24 +346,25 @@
       position: relative;
       display: grid;
       place-items: center;
-      min-height: 96px;
-      border-radius: 16px;
-      background: var(--cp-surface-soft);
-      border: 1px solid var(--cp-border);
+      min-height: 86px;
+      border-radius: 0;
+      background: transparent;
+      border: 0;
       overflow: hidden;
+      cursor: pointer;
     }
     .score {
-      color: var(--player-color);
-      font-size: clamp(48px, 17vw, 86px);
+      color: inherit;
+      font-size: clamp(72px, 21vw, 132px);
       line-height: 1;
-      font-weight: 1000;
+      font-weight: 300;
       letter-spacing: -0.08em;
     }
     .score.pulse { animation: pulse 240ms ease; }
     .score-delta {
       position: absolute;
-      inset: 12px 16px auto auto;
-      color: var(--cp-success);
+      inset: 6px 58px auto auto;
+      color: inherit;
       font-size: 1.3rem;
       font-weight: 900;
       opacity: 0;
@@ -342,18 +384,26 @@
       background: var(--cp-surface-soft);
     }
     .big-controls {
+      position: absolute;
+      inset: 60px 0 0;
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
+      grid-template-columns: 64px minmax(0, 1fr) 64px;
+      gap: 0;
+      pointer-events: none;
     }
     .big-score {
-      min-height: 72px;
-      font-size: 2rem;
-      font-weight: 1000;
-      color: var(--player-color);
+      min-height: 100%;
+      font-size: 3rem;
+      font-weight: 300;
+      color: inherit;
+      background: transparent;
+      border: 0;
+      opacity: 0.45;
+      pointer-events: auto;
     }
+    .big-score:last-child { grid-column: 3; }
     .player-actions {
-      display: grid;
+      display: none;
       grid-template-columns: repeat(4, 1fr);
       gap: 8px;
     }
@@ -391,8 +441,9 @@
     }
     .footer-controls {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
       gap: 8px;
+      min-width: 0;
     }
     .history-list {
       display: grid;
@@ -499,7 +550,7 @@
       background: var(--cp-surface-soft);
     }
     dialog {
-      width: min(520px, calc(100vw - 24px));
+      width: min(560px, calc(100vw - 24px));
       border: 1px solid var(--cp-border);
       padding: 0;
       color: var(--cp-text);
@@ -509,6 +560,50 @@
       padding: 16px;
       display: grid;
       gap: 12px;
+    }
+    .detail-hero {
+      display: grid;
+      place-items: center;
+      min-height: 72px;
+      border-radius: 16px;
+      background: var(--cp-accent);
+      color: var(--cp-accent-fg);
+      font-size: 1.75rem;
+      font-weight: 800;
+    }
+    .detail-score {
+      display: block;
+      font-size: 4rem;
+      line-height: 1;
+      font-weight: 300;
+    }
+    .detail-quick {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    .detail-quick button {
+      min-height: 78px;
+      font-size: clamp(1.5rem, 8vw, 2.25rem);
+      font-weight: 700;
+      color: var(--cp-link);
+      background: var(--cp-surface-soft);
+    }
+    .detail-sign-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 2fr;
+      gap: 8px;
+      align-items: center;
+    }
+    .detail-sign-row button {
+      min-height: 72px;
+      font-size: 2.4rem;
+      font-weight: 500;
+    }
+    .detail-sign-row .active-sign {
+      background: var(--cp-link);
+      color: var(--cp-accent-fg);
+      border-color: var(--cp-link);
     }
     .dialog-actions {
       display: grid;
@@ -589,18 +684,20 @@
     }
     @media (max-width: 980px) {
       .layout { grid-template-columns: 1fr; }
-      .panel-stack { grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); }
-      .topbar { grid-template-columns: 1fr; }
-      .toolbar { grid-auto-flow: row; grid-template-columns: 1fr auto auto auto; }
+      .panel-stack { display: none; }
+      .topbar { grid-template-columns: 1fr auto; }
+      .toolbar { grid-auto-flow: column; grid-template-columns: auto auto auto auto; }
     }
     @media (max-width: 560px) {
       .app { padding: 8px; gap: 8px; }
       .players-grid { gap: 8px; }
-      .toolbar { grid-template-columns: 1fr 1fr; }
-      .fab { position: fixed; right: 16px; bottom: 16px; z-index: 50; }
-      .player-card { min-height: 330px; }
+      .topbar { grid-template-columns: minmax(0, 1fr) auto; }
+      .toolbar { gap: 4px; }
+      .toolbar .ghost-button, .fab { width: 42px; height: 42px; min-height: 42px; }
+      .player-card { min-height: 150px; }
       .quick-grid { grid-template-columns: repeat(3, 1fr); }
       .stats-grid { grid-template-columns: 1fr; }
+      .footer-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
@@ -624,9 +721,9 @@
         </div>
       </section>
       <nav class="toolbar" aria-label="Quick actions">
-        <button class="ghost-button" id="themeToggle" type="button">Theme</button>
-        <button class="ghost-button" id="fullscreenBtn" type="button">Fullscreen</button>
-        <button class="ghost-button" id="shareBtn" type="button">Share</button>
+        <button class="ghost-button" id="themeToggle" type="button" aria-label="Toggle theme">◐</button>
+        <button class="ghost-button" id="fullscreenBtn" type="button" aria-label="Fullscreen">⛶</button>
+        <button class="ghost-button" id="shareBtn" type="button" aria-label="Share results">⋮</button>
         <button class="fab" id="addPlayerBtn" type="button" aria-label="Add player">+</button>
       </nav>
     </header>
@@ -753,9 +850,20 @@
   <dialog id="customDialog" aria-labelledby="customDialogTitle">
     <form method="dialog" class="dialog-body">
       <h2 id="customDialogTitle">Custom Score</h2>
+      <div class="detail-hero" id="detailHero">
+        <span id="detailPlayerName">Player</span>
+        <span class="detail-score" id="detailPlayerScore">0</span>
+      </div>
+      <div class="detail-quick" id="detailQuickButtons" aria-label="Quick score buttons"></div>
+      <p class="muted" style="text-align:center;margin:0">ⓘ Tap the score or name for this panel. Use card edges for quick ±1.</p>
       <div class="field">
         <label for="customValue">Value</label>
         <input id="customValue" inputmode="numeric" pattern="-?[0-9]*" placeholder="Example: -12">
+      </div>
+      <div class="detail-sign-row">
+        <button id="detailMinusBtn" type="button">−</button>
+        <button id="detailPlusBtn" class="active-sign" type="button">+</button>
+        <button id="detailApplyTypedBtn" class="primary-button" type="button">Apply typed</button>
       </div>
       <div class="keypad" id="keypad">
         <button value="1" type="button">1</button><button value="2" type="button">2</button><button value="3" type="button">3</button>
@@ -819,6 +927,7 @@
     const DEFAULT_COLORS = ["#f87171", "#60a5fa", "#4ade80", "#c084fc", "#fb923c", "#fde047"];
     const COLOR_BLIND_COLORS = ["#0072b2", "#e69f00", "#009e73", "#cc79a7", "#56b4e9", "#f0e442"];
     const AVATARS = ["🧙", "🛡️", "🐉", "🚀", "🦊", "🤖", "👑", "🎲"];
+    const DETAIL_BUTTONS = [5, 10, 15, 20, 50, 100, 200];
     const TEMPLATES = [
       { name: "4 Players", players: 4, buttons: [1, 5, 10], target: "" },
       { name: "Family Game", players: 4, buttons: [1, 5, 10], target: "" },
@@ -936,6 +1045,7 @@
         this.lastWinnerKey = "";
         this.pendingConfirm = null;
         this.customTargetId = null;
+        this.customSign = 1;
         this.editTargetId = null;
         this.dragId = null;
         this.wakeLock = null;
@@ -949,7 +1059,7 @@
       }
 
       collectElements() {
-        const ids = ["app","playersGrid","winnerLabel","winnerName","statsGrid","historyList","turnDisplay","timerDisplay","rollerDisplay","notesInput","toast","confetti","customDialog","customValue","editDialog","editName","editAvatar","editLocked","confirmDialog","confirmMessage","importDialog","importText","scoreGraph","archiveList","archiveSearch","presetName","templateButtons"];
+        const ids = ["app","playersGrid","winnerLabel","winnerName","statsGrid","historyList","turnDisplay","timerDisplay","rollerDisplay","notesInput","toast","confetti","customDialog","customValue","detailHero","detailPlayerName","detailPlayerScore","detailQuickButtons","editDialog","editName","editAvatar","editLocked","confirmDialog","confirmMessage","importDialog","importText","scoreGraph","archiveList","archiveSearch","presetName","templateButtons"];
         return Object.fromEntries(ids.map(id => [id, document.getElementById(id)]));
       }
 
@@ -981,6 +1091,9 @@
         document.getElementById("csvBtn").addEventListener("click", () => this.exportCsv());
         document.getElementById("importApplyBtn").addEventListener("click", () => this.importJson());
         document.querySelectorAll("[data-die]").forEach(btn => btn.addEventListener("click", () => this.rollDie(Number(btn.dataset.die))));
+        document.getElementById("detailMinusBtn").addEventListener("click", () => this.setCustomSign(-1));
+        document.getElementById("detailPlusBtn").addEventListener("click", () => this.setCustomSign(1));
+        document.getElementById("detailApplyTypedBtn").addEventListener("click", () => this.applyCustom());
         ["autoTurnToggle","muteToggle","hapticToggle","wakeToggle","compactToggle","largeScoreToggle","paletteToggle"].forEach(id => {
           document.getElementById(id).addEventListener("change", e => this.updateSetting(id, e.target.checked));
         });
@@ -1042,27 +1155,24 @@
       renderPlayers() {
         const leaders = new Set(this.getWinners().players.map(p => p.id));
         this.els.playersGrid.innerHTML = this.state.players.map((p, index) => {
-          const buttons = this.state.customButtons.slice(0, 3);
-          const extras = buttons.map(v => `<button class="score-button" data-score="${v}" aria-label="Add ${v} to ${this.escape(p.name)}">+${v}</button>`).join("");
-          const minus = buttons.map(v => `<button class="score-button" data-score="${-v}" aria-label="Subtract ${v} from ${this.escape(p.name)}">-${v}</button>`).join("");
           return `<article class="player-card ${leaders.has(p.id) ? "leader" : ""} ${this.state.turnIndex === index ? "current-turn" : ""} ${p.locked ? "locked" : ""}" style="--player-color:${p.color}" data-id="${p.id}" draggable="true" tabindex="0" aria-label="${this.escape(p.name)} score ${p.score}">
-            <button class="drag-handle" title="Drag to reorder" aria-label="Drag ${this.escape(p.name)}">↕</button>
             <header class="player-head">
-              <button class="avatar" data-action="edit" aria-label="Edit ${this.escape(p.name)}">${this.escape(p.avatar)}</button>
+              <button class="avatar" title="Reset ${this.escape(p.name)}" data-action="reset" aria-label="Reset ${this.escape(p.name)}">↶</button>
               <div class="name-wrap">
-                <h2 class="player-name" data-action="edit">${this.escape(p.name)}</h2>
-                <div class="rank-line">Rank ${this.rankOf(p.id)} • ${p.locked ? "Locked" : "Tap name to edit"}</div>
+                <h2 class="player-name" data-action="detail">${this.escape(p.name)}</h2>
+                <div class="rank-line">${this.state.turnIndex === index ? "▶ Turn • " : ""}Rank ${this.rankOf(p.id)}${p.locked ? " • Locked" : ""}</div>
               </div>
-              <input class="color-input" type="color" value="${p.color}" aria-label="Pick ${this.escape(p.name)} color" ${p.locked ? "disabled" : ""}>
+              <button class="avatar" data-action="edit" aria-label="Edit ${this.escape(p.name)}">✎</button>
+              <input class="color-input sr-only" type="color" value="${p.color}" aria-label="Pick ${this.escape(p.name)} color" ${p.locked ? "disabled" : ""}>
             </header>
-            <div class="score-zone" data-action="select">
+            <div class="score-zone" data-action="detail">
               <div class="score" id="score-${p.id}">${p.score}</div>
               <div class="score-delta" id="delta-${p.id}"></div>
             </div>
-            <div class="quick-grid">${extras}${minus}</div>
             <div class="big-controls">
-              <button class="big-score" data-score="1" aria-label="Large add one">+</button>
-              <button class="big-score" data-score="-1" aria-label="Large subtract one">−</button>
+              <button class="big-score" data-score="-1" aria-label="Subtract one from ${this.escape(p.name)}">−</button>
+              <span aria-hidden="true"></span>
+              <button class="big-score" data-score="1" aria-label="Add one to ${this.escape(p.name)}">+</button>
             </div>
             <div class="player-actions">
               <button data-action="custom">Custom</button>
@@ -1092,7 +1202,7 @@
           card.addEventListener("dragstart", e => { this.dragId = id; e.dataTransfer.effectAllowed = "move"; });
           card.addEventListener("dragover", e => e.preventDefault());
           card.addEventListener("drop", e => { e.preventDefault(); this.reorder(this.dragId, id); });
-          card.querySelector(".color-input").addEventListener("input", e => this.setColor(id, e.target.value));
+          card.querySelector(".color-input")?.addEventListener("input", e => this.setColor(id, e.target.value));
         });
       }
 
@@ -1102,6 +1212,7 @@
         this.state.selectedId = id;
         Store.save(this.state);
         if (scoreButton) this.changeScore(id, Number(scoreButton.dataset.score));
+        if (action === "detail") this.openCustom(id);
         if (action === "edit") this.openEdit(id);
         if (action === "custom") this.openCustom(id);
         if (action === "reset") this.resetPlayer(id);
@@ -1356,17 +1467,46 @@
       }
 
       openCustom(id) {
+        const p = this.state.players.find(player => player.id === id);
+        if (!p) return;
         this.customTargetId = id;
-        this.els.customValue.value = "";
+        this.customSign = 1;
+        document.getElementById("customDialogTitle").textContent = `${p.name} Scoring`;
+        this.els.detailHero.style.background = p.color;
+        this.els.detailPlayerName.textContent = p.name;
+        this.els.detailPlayerScore.textContent = p.score;
+        this.els.detailQuickButtons.innerHTML = DETAIL_BUTTONS.map(value => `<button type="button" data-detail-score="${value}">+${value}</button>`).join("");
+        this.els.detailQuickButtons.querySelectorAll("[data-detail-score]").forEach(btn => {
+          btn.addEventListener("click", () => {
+            this.changeScore(this.customTargetId, this.customSign * Number(btn.dataset.detailScore));
+            const updated = this.state.players.find(player => player.id === this.customTargetId);
+            if (updated) this.els.detailPlayerScore.textContent = updated.score;
+          });
+        });
+        this.setCustomSign(1);
+        this.els.customValue.value = "15";
         this.els.customDialog.showModal();
-        this.els.customValue.focus();
+        setTimeout(() => this.els.customValue.select(), 50);
       }
 
       applyCustom() {
-        const value = Number.parseInt(this.els.customValue.value, 10);
+        const raw = this.els.customValue.value.trim();
+        const parsed = Number.parseInt(raw, 10);
+        const value = raw.startsWith("-") ? parsed : this.customSign * Math.abs(parsed);
         if (!Number.isFinite(value) || value === 0) return this.toast("Enter a non-zero integer");
-        this.els.customDialog.close();
         this.changeScore(this.customTargetId, value);
+        const updated = this.state.players.find(player => player.id === this.customTargetId);
+        if (updated) this.els.detailPlayerScore.textContent = updated.score;
+      }
+
+      setCustomSign(sign) {
+        this.customSign = sign;
+        document.getElementById("detailMinusBtn").classList.toggle("active-sign", sign < 0);
+        document.getElementById("detailPlusBtn").classList.toggle("active-sign", sign > 0);
+        this.els.detailQuickButtons?.querySelectorAll("[data-detail-score]").forEach(btn => {
+          const value = Number(btn.dataset.detailScore);
+          btn.textContent = `${sign > 0 ? "+" : "-"}${value}`;
+        });
       }
 
       keypad(e) {
