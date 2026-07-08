@@ -6,16 +6,16 @@ A professional, mobile-first score tracking web app for board games, card games,
 
 Open `board-game-score-tracker.html` in any modern browser. No installation, build step, network access, framework, CDN, or external dependency is required.
 
-The main screen is optimized for fast table play: each player is shown as a large colored score card. Tap the left edge to subtract 1, tap the right edge to add 1, or tap the player name/score to open the focused scoring panel for larger custom adjustments.
+The main screen is optimized for fast table play: each player is shown as a large colored score card. Tap the left edge to subtract 1, tap the right edge to add 1, or tap the player name/score to open the focused scoring panel for larger custom adjustments. Use the visible `High wins` / `Low wins` scoring mode selector to control winner logic.
 
 Your game state is saved automatically in the browser with Local Storage, including players, scores, settings, notes, timer state, presets, history, and archived games.
 
 ## Features
 
 - Concise scoreboard layout with large stacked player cards, instant `-1` / `+1` card-edge controls, and a focused individual scoring panel from name/score taps.
-- Fast score entry with quick values, custom keypad entry, and configurable scoring buttons.
+- Fast score entry with quick values, compact custom amount entry, and configurable scoring buttons.
 - 1 to 6 players with editable names, emoji avatars, unique colors, color picker, locking, drag-and-drop ordering, and compact six-player mode.
-- Live winner/leader detection with highest-score or lowest-score modes, tie display, leader glow, target score, and game-over celebration.
+- Live winner/leader detection with explicit highest-score or lowest-score modes, tie display, leader glow, target score, end-game validation, and game-over celebration.
 - Undo and redo for score changes, renames, player changes, deletes, score resets, and game resets.
 - Score history with direct undo for individual score entries.
 - Statistics for leader, last place, average score, high/low score, largest gain/loss, turns, points awarded, and points removed.

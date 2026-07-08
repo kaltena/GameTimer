@@ -178,22 +178,18 @@
       align-items: center;
     }
     .winner-card .mode-row {
-      max-height: 0;
-      opacity: 0;
-      overflow: hidden;
-      transition: max-height 180ms ease, opacity 180ms ease;
-    }
-    .winner-card:focus-within .mode-row,
-    .winner-card:hover .mode-row {
-      max-height: 72px;
+      max-height: none;
       opacity: 1;
+      overflow: hidden;
+      font-size: 0.82rem;
+      gap: 4px;
     }
     .mode-pill {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      min-height: 36px;
-      padding: 4px 10px;
+      min-height: 28px;
+      padding: 2px 8px;
       border: 1px solid var(--cp-border);
       border-radius: 999px;
       color: var(--cp-text-soft);
@@ -387,7 +383,7 @@
       position: absolute;
       inset: 60px 0 0;
       display: grid;
-      grid-template-columns: 64px minmax(0, 1fr) 64px;
+      grid-template-columns: 76px minmax(0, 1fr) 76px;
       gap: 0;
       pointer-events: none;
     }
@@ -591,7 +587,7 @@
     }
     .detail-sign-row {
       display: grid;
-      grid-template-columns: 1fr 1fr 2fr;
+      grid-template-columns: 1fr 1fr;
       gap: 8px;
       align-items: center;
     }
@@ -605,17 +601,12 @@
       color: var(--cp-accent-fg);
       border-color: var(--cp-link);
     }
+    #confirmMessage { white-space: pre-line; }
     .dialog-actions {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 8px;
     }
-    .keypad {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-    }
-    .keypad button { font-size: 1.3rem; font-weight: 900; }
     .toast {
       position: fixed;
       left: 50%;
@@ -693,7 +684,9 @@
       .players-grid { gap: 8px; }
       .topbar { grid-template-columns: minmax(0, 1fr) auto; }
       .toolbar { gap: 4px; }
-      .toolbar .ghost-button, .fab { width: 42px; height: 42px; min-height: 42px; }
+      .toolbar .ghost-button, .fab { width: 42px; height: 42px; min-height: 42px; font-size: 0.95rem; }
+      #shareBtn { display: none; }
+      .big-controls { inset-inline: 8px; grid-template-columns: 56px minmax(0, 1fr) 56px; }
       .player-card { min-height: 150px; }
       .quick-grid { grid-template-columns: repeat(3, 1fr); }
       .stats-grid { grid-template-columns: 1fr; }
@@ -715,14 +708,14 @@
         <div class="winner-label" id="winnerLabel">Winner</div>
         <div class="winner-name crown" id="winnerName">Loading...</div>
         <div class="mode-row" role="radiogroup" aria-label="Winner determined by">
-          <span class="muted">Winner determined by:</span>
-          <label class="mode-pill"><input type="radio" name="winnerMode" value="highest"> Highest Score</label>
-          <label class="mode-pill"><input type="radio" name="winnerMode" value="lowest"> Lowest Score</label>
+          <span class="muted">Scoring:</span>
+          <label class="mode-pill"><input type="radio" name="winnerMode" value="highest"> High wins</label>
+          <label class="mode-pill"><input type="radio" name="winnerMode" value="lowest"> Low wins</label>
         </div>
       </section>
       <nav class="toolbar" aria-label="Quick actions">
         <button class="ghost-button" id="themeToggle" type="button" aria-label="Toggle theme">◐</button>
-        <button class="ghost-button" id="fullscreenBtn" type="button" aria-label="Fullscreen">⛶</button>
+        <button class="ghost-button" id="fullscreenBtn" type="button" aria-label="Toggle fullscreen view">Full</button>
         <button class="ghost-button" id="shareBtn" type="button" aria-label="Share results">⋮</button>
         <button class="fab" id="addPlayerBtn" type="button" aria-label="Add player">+</button>
       </nav>
@@ -863,13 +856,6 @@
       <div class="detail-sign-row">
         <button id="detailMinusBtn" type="button">−</button>
         <button id="detailPlusBtn" class="active-sign" type="button">+</button>
-        <button id="detailApplyTypedBtn" class="primary-button" type="button">Apply typed</button>
-      </div>
-      <div class="keypad" id="keypad">
-        <button value="1" type="button">1</button><button value="2" type="button">2</button><button value="3" type="button">3</button>
-        <button value="4" type="button">4</button><button value="5" type="button">5</button><button value="6" type="button">6</button>
-        <button value="7" type="button">7</button><button value="8" type="button">8</button><button value="9" type="button">9</button>
-        <button value="-" type="button">±</button><button value="0" type="button">0</button><button value="back" type="button">⌫</button>
       </div>
       <div class="dialog-actions">
         <button value="cancel" type="submit">Cancel</button>
@@ -1093,7 +1079,6 @@
         document.querySelectorAll("[data-die]").forEach(btn => btn.addEventListener("click", () => this.rollDie(Number(btn.dataset.die))));
         document.getElementById("detailMinusBtn").addEventListener("click", () => this.setCustomSign(-1));
         document.getElementById("detailPlusBtn").addEventListener("click", () => this.setCustomSign(1));
-        document.getElementById("detailApplyTypedBtn").addEventListener("click", () => this.applyCustom());
         ["autoTurnToggle","muteToggle","hapticToggle","wakeToggle","compactToggle","largeScoreToggle","paletteToggle"].forEach(id => {
           document.getElementById(id).addEventListener("change", e => this.updateSetting(id, e.target.checked));
         });
@@ -1104,7 +1089,6 @@
         document.getElementById("applyCustomBtn").addEventListener("click", () => this.applyCustom());
         document.getElementById("saveEditBtn").addEventListener("click", () => this.saveEdit());
         document.getElementById("confirmOkBtn").addEventListener("click", () => { const fn = this.pendingConfirm; this.pendingConfirm = null; this.els.confirmDialog.close(); if (fn) fn(); });
-        document.getElementById("keypad").addEventListener("click", e => this.keypad(e));
         document.addEventListener("keydown", e => this.shortcuts(e));
         window.addEventListener("beforeunload", () => Store.save(this.state));
         document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") this.syncWakeLock(); });
@@ -1139,7 +1123,7 @@
         document.documentElement.setAttribute("data-theme", this.state.theme);
         this.els.playersGrid.classList.toggle("large-score", this.state.largeScore);
         this.els.app.classList.toggle("compact", this.state.compact || this.state.players.length >= 6);
-        document.querySelector(`input[name='winnerMode'][value='${this.state.winnerMode}']`).checked = true;
+        document.querySelectorAll(`input[name='winnerMode'][value='${this.state.winnerMode}']`).forEach(input => { input.checked = true; });
         this.renderWinner();
         this.renderPlayers();
         this.renderStats();
@@ -1427,6 +1411,22 @@
       }
 
       endGame() {
+        const validation = this.endGameValidation();
+        this.confirm(validation, () => this.completeEndGame());
+      }
+
+      endGameValidation() {
+        const ranking = this.ranking();
+        const winners = this.getWinners().players;
+        const mode = this.state.winnerMode === "highest" ? "High score wins" : "Low score wins";
+        const warnings = [];
+        if (!this.state.scoreHistory.length) warnings.push("No score changes have been recorded.");
+        if (winners.length > 1) warnings.push(`Current result is a tie: ${winners.map(p => p.name).join(", ")}.`);
+        const podium = ranking.slice(0, 3).map((p, i) => `${i + 1}. ${p.name} - ${p.score}`).join("\n");
+        return `End game and archive results?\n\nScoring mode: ${mode}\n${podium}${warnings.length ? `\n\nCheck before ending:\n${warnings.join("\n")}` : ""}`;
+      }
+
+      completeEndGame() {
         const ranking = this.ranking();
         const summary = ranking.map((p, i) => `${["🥇","🥈","🥉"][i] || `${i + 1}.`} ${p.name} - ${p.score}`).join("\n");
         this.mutate("end game", () => {
@@ -1507,14 +1507,6 @@
           const value = Number(btn.dataset.detailScore);
           btn.textContent = `${sign > 0 ? "+" : "-"}${value}`;
         });
-      }
-
-      keypad(e) {
-        const value = e.target.closest("button")?.value;
-        if (!value) return;
-        if (value === "back") this.els.customValue.value = this.els.customValue.value.slice(0, -1);
-        else if (value === "-") this.els.customValue.value = this.els.customValue.value.startsWith("-") ? this.els.customValue.value.slice(1) : `-${this.els.customValue.value}`;
-        else this.els.customValue.value += value;
       }
 
       openEdit(id) {
